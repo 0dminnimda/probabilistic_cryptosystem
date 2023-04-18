@@ -1,4 +1,3 @@
-py
 from future import annotations
 
 import hashlib
@@ -7,12 +6,12 @@ import itertools
 from collections import UserList
 
 
-def separate(value, *indices, accum: bool = False):
+def separate(value, *indices, accumulate: bool = True):
     """
     >>> s = "0123456789" * 3
-    >>> list(separate(s, 0, 10, 12))
+    >>> list(separate(s, 0, 10, 2))
     ['', '0123456789', '01', '234567890123456789']
-    >>> list(separate(s, 0, 10, 2, accum=True))
+    >>> list(separate(s, 0, 10, 12, accumulate=False))
     ['', '0123456789', '01', '234567890123456789']
     """
 
@@ -38,6 +37,15 @@ class OctetString(UserList[Octet]):
 
     def as_bytearray(self) -> bytearray:
         return bytearray(it for it in self)
+
+    def oct_repr(self) -> str:
+        return "[" + ", ".join(oct(it) for it in self) + "]"
+
+    def hex_repr(self) -> str:
+        return "[" + " ".join(hex(it)[2:].rjust(2, "0") for it in self) + "]"
+
+    def diagnostic(value: OctetString) -> str:
+        return f"OctetString[{len(value)}]({value.hex_repr()[1:-1]})"
 
 
 def random_octet() -> Octet:
@@ -87,8 +95,7 @@ def pss_sign(message: OctetString, max_len: int) -> OctetString:
     w = MGF(seed + message, W_LEN)
 
     expanded_w = MGF(w, max_len - W_LEN)
-    seed_mask = expanded_w[:SEED_LEN]
-    remain_mask = expanded_w[SEED_LEN:]
+    seed_mask, remain_mask = separate(expanded_w, SEED_LEN)
     masked_seed = apply_mask(seed, seed_mask)
     return w + masked_seed + remain_mask
 
@@ -102,52 +109,45 @@ def pss_verify(
     if len(message) >= 2**61 - SEED_LEN - 1:
         raise ValueError("Yall ar stupid, make message smaller!")
 
-    w_sign = signature[:W_LEN]
-    masked_seed_sign = signature[W_LEN : W_LEN + SEED_LEN]
-    remain_mask_sign = signature[W_LEN + SEED_LEN:]
-
-    # w, masked_seed, remain_mask = separate(signature, W_LEN, SEED_LEN, accumulate=True)
+    w, masked_seed, remain_mask = separate(signature, W_LEN, SEED_LEN)
 
     expanded_w = MGF(w_sign, max_len - W_LEN)
-    seed_mask = expanded_w[:SEED_LEN]
-    remain_mask = expanded_w[SEED_LEN:]
+    seed_mask, remain_mask = separate(expanded_w, SEED_LEN)
     seed = apply_mask(masked_seed_sign, seed_mask)
 
     w = MGF(seed + message, W_LEN)
     if w != w_sign:
         print(
-            "w != w_sign: "
-            + f"{w=}, {w_sign=}"
+            "ERROR: w != w_sign: "
+            + f"{w.diagnostic()} != {w_sign.diagnostic()}"
         )
         return False
 
     if remain_mask != remain_mask_sign:
         print(
-            "remain_mask != remain_mask_sign: "
-            + f"{remain_mask=}, {remain_mask_sign=}"
+            "ERROR: remain_mask != remain_mask_sign: "
+            + f"{remain_mask.diagnostic()} != {remain_mask_sign.diagnostic()}"
         )
         return False
 
     return True
 
 
-def diagnostics(value: OctetString) -> None:
-    print(f"OctetString[{len(value)}]:")
-    print(value, repr(value.as_str()), sep="\n")
-
-
 MAX_SIGN_LEN = 50
-inp = random_octet_string(69)
-signature = pss_sign(inp, MAX_SIGN_LEN)
-is_valid = pss_verify(inp, MAX_SIGN_LEN, signature)
 
+print("\n")
+inp = random_octet_string(69)
+print(inp.diagnostic())
+
+print("\n")
+signature = pss_sign(inp, MAX_SIGN_LEN)
+print(signature.diagnostic())
+
+print("\n")
+is_valid = pss_verify(inp, MAX_SIGN_LEN, signature)
+print(is_valid)
+
+print("\n")
 inp[0] += 1
 is_valid2 = pss_verify(inp, MAX_SIGN_LEN, signature)
-
-print("\n")
-diagnostics(inp)
-print("\n")
-diagnostics(signature)
-print("\n")
-print(is_valid)
 print(is_valid2)
