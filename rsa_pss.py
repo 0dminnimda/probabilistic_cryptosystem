@@ -319,7 +319,10 @@ print(signature.diagnostic())
 
 is_valid = pss_verify(inp, MAX_SIGN_LEN, signature)
 print("Valid" if is_valid else "Invalid")
-print(inp.to_bytes())
+try:
+    print(inp.to_str())
+except UnicodeDecodeError:
+    print(inp.to_bytes())
 
 # Reciever
 print("=" * 15 + " Error tests " + "=" * 15)
