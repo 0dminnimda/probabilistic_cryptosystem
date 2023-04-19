@@ -184,6 +184,295 @@ def generate_prime_candidate(nbits: int) -> Iterable[int]:
         yield candidate
 
 
+def Miller_Rabin_test(n: int, s: int, d: int) -> bool:
+    a = random.randint(2, n - 2)
+    x = pow(a, d, n)
+    if x == 1 or x == n - 1:
+        return True
+    for _ in range(s - 1):
+        x = pow(x, 2, n)
+        if x == n - 1:
+            return True
+        if x == 1:
+            return False
+    return False
+
+
+def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
+    """Tests if n is prime using the probabilistic Miller-Rabin primality test."""
+
+    # Ensure input requirements
+    if n <= 2:
+        return n == 2
+    if n % 2 == 0:
+        return False
+
+    # Compute s and d such that n - 1 = d * 2^s, where d is odd
+    s, d = 0, n - 1
+    while d % 2 == 0:
+        s += 1
+        d //= 2
+
+    # Perform ntests iterations of the Miller-Rabin test
+    return all(Miller_Rabin_test(n, s, d) for _ in range(ntests))
+
+
+def is_prime_trial_division(n: int) -> bool:
+    """Tests if n is prime using the deterministic Trial Division primality test."""
+
+    # Ensure input requirements
+    if n <= 2:
+        return n == 2
+    if n % 2 == 0:
+        return False
+
+    # Check odd divisors up to the square root of n
+    for i in range(3, int(n**0.5) + 1, 2):
+        if n % i == 0:
+            return False
+
+    return True
+
+
+def is_prime_AKS(n: int) -> bool:
+    """Tests if n is prime using the deterministic AKS primality test"""
+
+    # Ensure input requirements
+    if n < 2:
+        return False
+
+    # Step 1: Find the smallest r such that ord_r(n) > log^2(n)
+    r = 3
+    while r < n:
+        if math.gcd(r, n) != 1:
+            return False
+
+        for k in range(1, n.bit_length() + 1):
+            if pow(r, n // 2**k, n) == 1:
+                break
+        else:
+            return True
+        r += 1
+
+    return False
+
+
+# def is_prime_AKS(n: int) -> bool:
+#     """Tests if n is prime using the deterministic AKS primality test"""
+
+#     # Ensure input requirements
+#     if n < 2:
+#         return False
+
+#     # Step 1: Find the smallest r such that ord_r(n) > log^2(n)
+#     r = 2
+#     while r <= n:
+#         if math.gcd(r, n) == 1:
+#             for k in range(1, n.bit_length() + 1):
+#                 if pow(r, n // 2**k, n) == 1:
+#                     break
+#             else:
+#                 return True
+#         r += 1
+
+#     return False
+
+
+# def is_perfect_power(n):
+#     if n < 2:
+#         return True
+
+#     # Compute the integer square root of n
+#     x = int(math.sqrt(n))
+
+#     # Perform binary search for the integer root
+#     lo, hi = 2, x
+#     while lo <= hi:
+#         mid = (lo + hi) // 2
+#         p = mid**2
+#         if p == n:
+#             return True
+#         elif p < n:
+#             lo = mid + 1
+#         else:
+#             hi = mid - 1
+
+#     return False
+
+
+# def is_perfect_power(n):
+#     lo, hi = 2, n
+#     while lo <= hi:
+#         mid = (lo + hi) // 2
+#         for power in range(2, int(math.log2(n)) + 1):
+#             perfect_power = mid ** power
+#             if perfect_power == n:
+#                 return True
+#             elif perfect_power > n:
+#                 break
+#         if perfect_power < n:
+#             lo = mid + 1
+#         else:
+#             hi = mid - 1
+#     return False
+
+
+# def is_perfect_power(n: int) -> bool:
+#     lo, hi = 2, int(math.log2(n))
+#     while lo <= hi:
+#         mid = (lo + hi) // 2
+#         perfect_power = mid ** 2
+#         while perfect_power <= n:
+#             if perfect_power == n:
+#                 return True
+#             mid += 1
+#             perfect_power = mid ** 2
+#         hi = mid - 2
+#     return False
+
+
+def is_perfect_power(n):
+    if n <= 3:
+        return True
+
+    # Find upper bound for base using logarithm
+    max_base = int(math.log2(n)) + 1
+
+    # Binary search for base and exponent
+    left, right = 2, max_base
+    while left <= right:
+        mid = (left + right) // 2
+        for base in range(2, int(n ** (1/mid)) + 1):
+            if base ** mid == n:
+                return True
+        if base ** mid < n:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return False
+
+def is_prime_deterministic(n: int) -> bool:
+    if n == 2:
+        return True
+    if n % 2 == 0 or n == 1:
+        return False
+
+    # Step 1: Check if n is a perfect power
+    k = 2
+    while k <= n.bit_length():
+        a = int(n ** (1 / k))
+        if a**k == n:
+            return False
+        k += 1
+
+    # Step 2: Find the smallest r such that ord_r(n) > log^2(n)
+    r = 2
+    while r <= n:
+        if math.gcd(r, n) == 1:
+            for k in range(1, n.bit_length() + 1):
+                if pow(r, n // 2**k, n) == 1:
+                    break
+            else:
+                break
+        r += 1
+    if r > n.bit_length() ** 2:
+        return True
+
+    # Step 3: Check if f(x) is divisible by (x-r)
+    f = [0] * (r + 1)
+    f[0] = 1
+    for i in range(1, r // 2 + 1):
+        f[i] = f[i - 1] * (n - i + 1) // i % n
+    for i in range(r // 2 + 1, r + 1):
+        f[i] = f[r - i]
+    f[0] -= 1
+    f[-1] -= a % n
+    for i in range(1, r):
+        if f[i] % (r, n) != 0:
+            return False
+
+    # Step 4: Check if n is a prime power
+    for p in range(2, int(n**0.25) + 1):
+        if n % p == 0:
+            k = 0
+            while n % p == 0:
+                n //= p
+                k += 1
+            if pow(a, n // p, n) == 1 or pow(a, n // p**2, n) == 1:
+                return False
+            break
+    else:
+        p = n
+
+    # Step 5: n is prime
+    return True
+
+
+"""
+Input: integer n > 1.
+1. If (n /* if perfect power */ = a^b for a > 1 and b > 1), output COMPOSITE.
+2. Find the smallest r such that ord_r(n) > log_2(n)^2. (if r and n are not coprime, then skip this r)
+3. If any 2 ≤ a ≤ min(r, n−1) divide n, output COMPOSITE.
+4. If n ≤ r, output PRIME.
+5. For a = 1 to floor(sqrt(φ(r))*log_2(n)) do
+   if ((X + a)n ≠ Xn + a (mod Xr − 1, n)), output COMPOSITE;
+6. Output PRIME.
+
+
+1. if (n is of the form ab, b > 1) output "COMPOSITE";
+2. r = 2;
+3. while (r < n) {
+4.     if (gcd(n, r) != 1) output "COMPOSITE";
+5.     if (r is prime) {
+6.         let q be the largest prime factor of r - 1;
+7.         if (q >= 4 * sqrt(r) * log(n)) and ((n ^ ((r-1)/q) mod r) != 1)) {
+8.             break;
+9.         }
+10.     }
+11.     r = r + 1;
+12.     for a = 1 to 2 * sqrt(r) * log(n) {
+13.         if (((a**n) % n) != ((a**(n % (r-1))) % n)) output "COMPOSITE";
+14.     }
+15.     output "P";
+16. }
+
+
+1. if ( n = a^b for some a, b ≥ 2 ) then return "composite";
+2. r ← 2;
+3. while ( r < n ) do
+4.     if ( r divides n ) then return "composite";
+5.     if ( r is a prime number ) then
+6.         if ( n^i mod r ≠ 1 for all i, 1 ≤ i ≤ 4*log₂(n)^2 ) then
+7.             break;
+8.         r ← r + 1;
+9.     if ( r = n ) then return "prime";
+10.     for a from 1 to 2*ceil(sqrt(r))*ceil(log₂(n)) do
+11.         if (in Zn[X]) (X + a)^n mod (X^r - 1) ≠ X^(n mod r) + a then
+12.             return "composite";
+13.     return "prime";
+
+
+1 if ( n = ab for some a, b ≥ 2 ) then return “composite”;
+2 r ← 2;
+3 while ( r < n ) do
+4 if ( r divides n ) then return “composite”;
+5 if ( r is a prime number ) then
+6 if ( ni mod r = 1 for all i, 1 ≤ i ≤ 4log n
+2 ) then
+7 break;
+8 r ← r +1;
+9 if ( r = n ) then return “prime”;
+10 for a from 1 to 2
+√r 
+·log n
+ do
+11 if (in Zn[X]) (X + a)n mod (Xr − 1) = Xn mod r + a then
+12 return “composite”;
+13 return “prime”;
+"""
+
+
 def is_prime(n: int, ntests: int = 10) -> bool:
     """Tests if p is prime using the Miller-Rabin primality test."""
 
