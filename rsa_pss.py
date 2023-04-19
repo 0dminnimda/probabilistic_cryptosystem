@@ -53,10 +53,18 @@ def random_octet() -> Octet:
 
 class OctetString(UserList[Octet]):
     def to_str(self) -> str:
-        return "".join(chr(it) for it in self)
+        return self.to_bytes().decode("utf-8")
+
+    @classmethod
+    def from_str(cls, value: str) -> OctetString:
+        return cls.from_bytes(value.encode("utf-8"))
 
     def to_bytes(self) -> bytes:
         return bytes(self)
+
+    @classmethod
+    def from_bytes(cls, value: bytes) -> OctetString:
+        return cls(value)
 
     def to_bytearray(self) -> bytearray:
         return bytearray(it for it in self)
@@ -276,10 +284,14 @@ def rsa_decode(number: int, public_key: Key) -> int:
 
 MAX_SIGN_LEN = 50
 
+if int(input("Do you want to use random message? [0/1]: ")):
+    inp = OctetString.random(69)
+else:
+    inp = OctetString.from_str(input("Then input the message: "))
+
 # Sender
 print("=" * 15 + " Sender " + "=" * 15)
 
-inp = OctetString.random(69)
 print(inp.diagnostic())
 
 pss_signature = pss_sign(inp, MAX_SIGN_LEN)
@@ -307,6 +319,7 @@ print(signature.diagnostic())
 
 is_valid = pss_verify(inp, MAX_SIGN_LEN, signature)
 print("Valid" if is_valid else "Invalid")
+print(inp.to_bytes())
 
 # Reciever
 print("=" * 15 + " Error tests " + "=" * 15)
