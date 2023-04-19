@@ -6,6 +6,7 @@ import random
 import math
 from collections import UserList
 from typing import Any, Iterable, TypeVar, Sequence
+import numpy as np
 
 
 SequenceT = TypeVar("SequenceT", bound=Sequence[Any])
@@ -234,137 +235,253 @@ def is_prime_trial_division(n: int) -> bool:
     return True
 
 
+def is_perfect_power(n: int) -> bool:
+    """
+    Returns True if n is a perfect power (i.e. n=m^k for some integers m>1 and k>1).
+    False otherwise.
+    """
+    if n <= 2:
+        return False
+
+    for base in range(2, n.bit_length() + 1):
+        exponent = round(math.log(n, base))
+        if base**exponent == n:
+            return True
+    return False
+
+
+def multiplicative_order(a: int, n: int) -> int:
+    """
+    Returns the smallest positive integer k such that a^k ≡ 1 (mod n),
+    or -1 if no such integer exists.
+    """
+    if math.gcd(a, n) != 1:
+        # a and n are not coprime, so no multiplicative order exists
+        return -1
+    order = 1
+    while pow(a, order, n) != 1:
+        order += 1
+    return order
+
+
+# def poly_mod_n(r, n):
+#     # computes the value of the polynomial (x-1)^n - (x^n - 1) modulo (x^r - 1, n)
+#     f = [0] * (r + 1)
+#     f[0] = -1
+#     f[r] = 1
+#     g = [0] * (r + 1)
+#     g[0] = 1
+#     g[n % (r + 1)] = -1
+#     prod = [0] * (2 * r + 1)
+#     for i in range(r + 1):
+#         for j in range(r + 1):
+#             prod[i + j] += f[i] * g[j]
+#     for i in range(r, 0, -1):
+#         prod[i] = prod[i - 1] - prod[i] * n
+#     prod[0] = -prod[0] * n
+#     return prod[r]
+
+
+# def poly_mod(r: int, n: int, a: int) -> int:
+#     """
+#     Computes the value of the polynomial (x+a)^n - (x^n + a) modulo (x^r - 1, n)
+#     """
+#     f = [0] * (r + 1)
+#     f[0] = -a
+#     f[r] = 1
+#     g = [0] * (r + 1)
+#     g[0] = 1
+#     g[n % (r + 1)] = -1
+#     prod = [0] * (2 * r + 1)
+#     for i in range(r + 1):
+#         for j in range(r + 1):
+#             prod[i + j] += f[i] * g[j]
+#     for i in range(r, 0, -1):
+#         prod[i] = prod[i - 1] - prod[i] * n
+#     prod[0] = -prod[0] * n
+#     return prod[r] + a
+
+'''
+def poly_mod(r: int, n: int, a: int) -> int:
+    """
+    Computes the value of the polynomial (x+a)^n - (x^n + a) modulo (x^r - 1, n)
+    """
+    # Calculate (x+a)^n
+    poly1 = [(a**n)%n, 1]    # (a^n + 1*x^0)
+    for i in range(n):
+        poly1 = poly_mul(poly1, [(a%n), 1])   # (a^n + nC1*a^(n-1)*x + ...)
+
+    # Calculate x^n + a
+    poly2 = [(a%n), 1]    # (a + 1*x^0)
+    for i in range(n):
+        poly2 = poly_mul(poly2, [0, 1])   # (0*x^(n+1) + a*x^n + ...)
+
+    # Calculate (x^r - 1)
+    poly3 = [1] + [0]*(r-1)   # (1*x^r-1 + 0*x^(r-2) + ...)
+    poly3[-1] = -1   # (1*x^r-1 + 0*x^(r-2) + ... - 1)
+
+    # Multiply (x+a)^n by -1 and subtract x^n + a
+    result = poly_sub(poly_mul(poly1, [-1, 1]), poly2)
+
+    # Take the result modulo (x^r - 1, n)
+    result = poly_div(result, poly3)[1]
+    return result[0] % n
+
+
+def poly_mul(poly1, poly2):
+    """
+    Multiplies two polynomials and returns the result
+    """
+    result = [0]*(len(poly1)+len(poly2)-1)
+    for i in range(len(poly1)):
+        for j in range(len(poly2)):
+            result[i+j] += poly1[i]*poly2[j]
+    return result
+
+
+def poly_sub(poly1, poly2):
+    """
+    Subtracts two polynomials and returns the result
+    """
+    result = [0]*max(len(poly1), len(poly2))
+    for i in range(len(poly1)):
+        result[i] += poly1[i]
+    for i in range(len(poly2)):
+        result[i] -= poly2[i]
+    return result
+
+
+def poly_div(poly1, poly2):
+    """
+    Divides two polynomials and returns the quotient and remainder
+    """
+    if len(poly1) < len(poly2):
+        return [], poly1
+    elif len(poly2) == 1:
+        return [poly1[i]//poly2[0] for i in range(len(poly1))], [poly1[i]%poly2[0] for i in range(len(poly1))]
+    else:
+        q = [0]*(len(poly1)-len(poly2)+1)
+        r = poly1[:]
+        for i in range(len(q)-1, -1, -1):
+            q[i] = r[i+len(poly2)-1] // poly2[-1]
+            for j in range(len(poly2)):
+                r[i+j+len(poly2)-1] -= q[i] * poly2[j]
+        return q, r
+
+'''
+
+
+def poly_mod(r: int, n: int, a: int) -> int:
+    """
+    Computes the value of the polynomial (x+a)^n - (x^n + a) modulo (x^r - 1, n)
+    """
+    sub = np.poly1d([1, a])**n - (np.poly1d([1] + [0]*n) + np.poly1d([a]))
+    _, rem = sub / (np.poly1d([1] + [0]*r) - np.poly1d([1]))
+    return rem.c(1) % n
+
+    # f = [0] * (r + 1)
+    # f[0] = -1
+    # f[r] = 1
+    # g = [0] * (r + 1)
+    # g[0] = 1
+    # for i in range(n + 1):
+    #     g[i % (r + 1)] += binomial_coefficient(n, i) * a**(n-i)
+    # prod = [0] * (2 * r + 1)
+    # for i in range(r + 1):
+    #     for j in range(r + 1):
+    #         prod[i + j] += f[i] * g[j]
+    # for i in range(r, 0, -1):
+    #     prod[i] = prod[i - 1] - prod[i] * n
+    # prod[0] = -prod[0] * n
+    # return (prod[r] - a**n) % n
+
+
+def binomial_coefficient(n: int, k: int) -> int:
+    """
+    Computes the binomial coefficient n choose k
+    """
+    if k < 0 or k > n:
+        return 0
+    if k == 0 or k == n:
+        return 1
+    k = min(k, n - k)
+    c = 1
+    for i in range(k):
+        c = c * (n - i) // (i + 1)
+    return c
+
+
 def is_prime_AKS(n: int) -> bool:
     """Tests if n is prime using the deterministic AKS primality test"""
 
-    # Ensure input requirements
-    if n < 2:
-        return False
-
-    # Step 1: Find the smallest r such that ord_r(n) > log^2(n)
-    r = 3
-    while r < n:
-        if math.gcd(r, n) != 1:
-            return False
-
-        for k in range(1, n.bit_length() + 1):
-            if pow(r, n // 2**k, n) == 1:
-                break
-        else:
-            return True
-        r += 1
-
-    return False
-
-
-# def is_prime_AKS(n: int) -> bool:
-#     """Tests if n is prime using the deterministic AKS primality test"""
-
-#     # Ensure input requirements
-#     if n < 2:
-#         return False
-
-#     # Step 1: Find the smallest r such that ord_r(n) > log^2(n)
-#     r = 2
-#     while r <= n:
-#         if math.gcd(r, n) == 1:
-#             for k in range(1, n.bit_length() + 1):
-#                 if pow(r, n // 2**k, n) == 1:
-#                     break
-#             else:
-#                 return True
-#         r += 1
-
-#     return False
-
-
-# def is_perfect_power(n):
-#     if n < 2:
-#         return True
-
-#     # Compute the integer square root of n
-#     x = int(math.sqrt(n))
-
-#     # Perform binary search for the integer root
-#     lo, hi = 2, x
-#     while lo <= hi:
-#         mid = (lo + hi) // 2
-#         p = mid**2
-#         if p == n:
-#             return True
-#         elif p < n:
-#             lo = mid + 1
-#         else:
-#             hi = mid - 1
-
-#     return False
-
-
-# def is_perfect_power(n):
-#     lo, hi = 2, n
-#     while lo <= hi:
-#         mid = (lo + hi) // 2
-#         for power in range(2, int(math.log2(n)) + 1):
-#             perfect_power = mid ** power
-#             if perfect_power == n:
-#                 return True
-#             elif perfect_power > n:
-#                 break
-#         if perfect_power < n:
-#             lo = mid + 1
-#         else:
-#             hi = mid - 1
-#     return False
-
-
-# def is_perfect_power(n: int) -> bool:
-#     lo, hi = 2, int(math.log2(n))
-#     while lo <= hi:
-#         mid = (lo + hi) // 2
-#         perfect_power = mid ** 2
-#         while perfect_power <= n:
-#             if perfect_power == n:
-#                 return True
-#             mid += 1
-#             perfect_power = mid ** 2
-#         hi = mid - 2
-#     return False
-
-
-def is_perfect_power(n):
-    if n <= 3:
-        return True
-
-    # Find upper bound for base using logarithm
-    max_base = int(math.log2(n)) + 1
-
-    # Binary search for base and exponent
-    left, right = 2, max_base
-    while left <= right:
-        mid = (left + right) // 2
-        for base in range(2, int(n ** (1/mid)) + 1):
-            if base ** mid == n:
-                return True
-        if base ** mid < n:
-            left = mid + 1
-        else:
-            right = mid - 1
-
-    return False
-
-def is_prime_deterministic(n: int) -> bool:
     if n == 2:
         return True
-    if n % 2 == 0 or n == 1:
+    if n % 2 == 0 or n < 2:
         return False
 
-    # Step 1: Check if n is a perfect power
-    k = 2
-    while k <= n.bit_length():
-        a = int(n ** (1 / k))
-        if a**k == n:
+    # Check if n is a perfect power
+    if is_perfect_power(n):
+        return False
+
+    # Find the smallest r such that ord_r(n) > floor(log2(n))^2
+    # r = 2
+    # while multiplicative_order(r, n) <= (n.bit_length() - 1) ** 2:
+    #     r += 1
+    cap_k = (n.bit_length() - 1) ** 2
+    r = 2
+    # run = True
+    while any(pow(n, k, r) in {0, 1} for k in range(1, cap_k + 1)):
+        # run = False
+        # for k in range(1, cap_k):
+        #     if run:
+        #         break
+        #     run = pow(n, k, r) in {0, 1}
+        r += 1
+    # r -= 1  # the loop over increments by one
+
+    for a in range(r, 1, -1):
+        if 1 < math.gcd(a, n) < n:
             return False
-        k += 1
+
+    if n <= r:
+        return True
+
+    # Check if n is composite using the polynomial function
+    # for a in range(1, 2 * math.ceil(r**0.5) * math.ceil(math.log2(n)) + 1):
+    for a in range(1, int(r**0.5 * math.log2(n)) + 1):
+        if poly_mod(r, n, a) != 0:
+            return False
+
+    return True
+
+    # # Ensure input requirements
+    # if n < 2:
+    #     return False
+
+    # # Step 1: Find the smallest r such that ord_r(n) > log^2(n)
+    # r = 3
+    # while r < n:
+    #     if math.gcd(r, n) != 1:
+    #         return False
+
+    #     for k in range(1, n.bit_length() + 1):
+    #         if pow(r, n // 2**k, n) == 1:
+    #             break
+    #     else:
+    #         return True
+    #     r += 1
+
+    # return False
+
+
+def is_prime_deterministic(n: int) -> bool:
+    if n <= 5:
+        return n == 2 or n == 3 or n == 5
+    if n % 2 == 0 or n % 3 == 0 or n % 5 == 0:
+        return False
+
+    if is_perfect_power(n):
+        return False
 
     # Step 2: Find the smallest r such that ord_r(n) > log^2(n)
     r = 2
@@ -376,37 +493,39 @@ def is_prime_deterministic(n: int) -> bool:
             else:
                 break
         r += 1
+    print("#", r, n - r)
     if r > n.bit_length() ** 2:
+        print("first")
         return True
 
     # Step 3: Check if f(x) is divisible by (x-r)
-    f = [0] * (r + 1)
-    f[0] = 1
-    for i in range(1, r // 2 + 1):
-        f[i] = f[i - 1] * (n - i + 1) // i % n
-    for i in range(r // 2 + 1, r + 1):
-        f[i] = f[r - i]
-    f[0] -= 1
-    f[-1] -= a % n
-    for i in range(1, r):
-        if f[i] % (r, n) != 0:
-            return False
+    # f = [0] * (r + 1)
+    # f[0] = 1
+    # for i in range(1, r // 2 + 1):
+    #     f[i] = f[i - 1] * (n - i + 1) // i % n
+    # for i in range(r // 2 + 1, r + 1):
+    #     f[i] = f[r - i]
+    # f[0] -= 1
+    # f[-1] -= a % n
+    # for i in range(1, r):
+    #     if f[i] % (r, n) != 0:
+    #         return False
 
-    # Step 4: Check if n is a prime power
-    for p in range(2, int(n**0.25) + 1):
-        if n % p == 0:
-            k = 0
-            while n % p == 0:
-                n //= p
-                k += 1
-            if pow(a, n // p, n) == 1 or pow(a, n // p**2, n) == 1:
-                return False
-            break
-    else:
-        p = n
-
-    # Step 5: n is prime
+    print("second")
     return True
+
+
+is_prime_AKS(31)
+
+
+for i in range(10**6):
+    a = is_prime_trial_division(i)
+    # print(a)
+    b = is_prime_AKS(i)
+    # print(b)
+    if a != b:
+        print(i, a, b)
+    # print(i)
 
 
 """
@@ -416,7 +535,7 @@ Input: integer n > 1.
 3. If any 2 ≤ a ≤ min(r, n−1) divide n, output COMPOSITE.
 4. If n ≤ r, output PRIME.
 5. For a = 1 to floor(sqrt(φ(r))*log_2(n)) do
-   if ((X + a)n ≠ Xn + a (mod Xr − 1, n)), output COMPOSITE;
+   if ((X + a)^n ≠ X^n + a (mod X^r - 1, n)), output COMPOSITE;
 6. Output PRIME.
 
 
@@ -452,24 +571,6 @@ Input: integer n > 1.
 12.             return "composite";
 13.     return "prime";
 
-
-1 if ( n = ab for some a, b ≥ 2 ) then return “composite”;
-2 r ← 2;
-3 while ( r < n ) do
-4 if ( r divides n ) then return “composite”;
-5 if ( r is a prime number ) then
-6 if ( ni mod r = 1 for all i, 1 ≤ i ≤ 4log n
-2 ) then
-7 break;
-8 r ← r +1;
-9 if ( r = n ) then return “prime”;
-10 for a from 1 to 2
-√r 
-·log n
- do
-11 if (in Zn[X]) (X + a)n mod (Xr − 1) = Xn mod r + a then
-12 return “composite”;
-13 return “prime”;
 """
 
 
@@ -508,6 +609,25 @@ def generate_prime(nbits: int) -> int:
         if is_prime(candidate):
             return candidate
     assert False, "Unreachable"
+
+
+# def poly_mod(r: int, n: int, a: int) -> int:
+#     # Compute (x+a)^n mod (x^r - 1, n)
+#     poly1 = pow(a + 1, n, xgcd((2 << r) - 1, n)[0], n)
+#     # Compute x^n + a mod n
+#     poly2 = (pow(2, n * r, n) - 2**(n * r - r) + a) % n
+#     # Subtract the two polynomials and take mod n
+#     return (poly1 - poly2) % n
+
+
+def xgcd(a: int, b: int) -> tuple[int, int, int]:
+    """Extended Euclidean algorithm."""
+    x, y, u, v = 0, 1, 1, 0
+    while a != 0:
+        q, r = divmod(b, a)
+        b, a = a, r
+        x, y, u, v = u, v, x - u * q, y - v * q
+    return b, x, y
 
 
 def egcd(a: int, b: int) -> tuple[int, int, int]:
