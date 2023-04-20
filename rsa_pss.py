@@ -240,11 +240,6 @@ def is_perfect_power(n: int) -> bool:
     return any(
         base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
     )
-    # for base in range(2, n.bit_length() + 1):
-    #     exponent = round(math.log(n, base))
-    #     if base**exponent == n:
-    #         return True
-    # return False
 
 
 def multiplicative_order(a: int, n: int) -> int:
@@ -480,17 +475,6 @@ def rsa_generate_keypair_of_sizes(s1: int, s2: int) -> tuple[Key, Key]:
     return rsa_generate_keypair(generate_prime(s1), generate_prime(s2))
 
 
-MIN_PRIME_BITS = 20
-MAX_PRIME_BITS = 40
-
-
-def rsa_generate_random_keypair() -> tuple[Key, Key]:
-    return rsa_generate_keypair_of_sizes(
-        random.randrange(MIN_PRIME_BITS, MAX_PRIME_BITS),
-        random.randrange(MIN_PRIME_BITS, MAX_PRIME_BITS),
-    )
-
-
 def rsa_encode(number: int, private_key: Key) -> int:
     return pow(number, *private_key)
 
@@ -501,58 +485,76 @@ def rsa_decode(number: int, public_key: Key) -> int:
 
 MAX_SIGN_LEN = 50
 
+
+def send(message: bytes) -> tuple[bytes, int, Key]:
+    print("=" * 15 + " Sender " + "=" * 15)
+
+    oct_msg = OctetString.from_bytes(message)
+    print(message)
+    print(oct_msg.diagnostic())
+
+    pss_signature = pss_sign(oct_msg, MAX_SIGN_LEN)
+    print(pss_signature.diagnostic())
+
+    numeric_repr = pss_signature.to_int()
+    print(numeric_repr)
+
+    prime_size = numeric_repr.bit_length() // 2 + 1
+    public, private = rsa_generate_keypair_of_sizes(prime_size, prime_size)
+    print(public)
+    print(private)
+
+    rsa_signature = rsa_encode(numeric_repr, private)
+    print(rsa_signature)
+
+    return message, rsa_signature, public
+
+
+def recieve(message: bytes, rsa_signature: int, public: Key) -> bool:
+    print("=" * 15 + " Reciever " + "=" * 15)
+
+    numeric_repr = rsa_decode(rsa_signature, public)
+    print(numeric_repr)
+
+    oct_msg = OctetString.from_bytes(message)
+    print(oct_msg.diagnostic())
+
+    pss_signature = OctetString.from_int(numeric_repr)
+    print(pss_signature.diagnostic())
+
+    is_valid = pss_verify(oct_msg, MAX_SIGN_LEN, pss_signature)
+    print("Valid" if is_valid else "Invalid")
+    try:
+        print(message.decode("utf-8"))
+    except UnicodeDecodeError:
+        print(message)
+
+    return is_valid
+
+
 if int(input("Do you want to use random message? [0/1]: ")):
-    inp = OctetString.random(69)
+    message = OctetString.random(69).to_bytes()
 else:
-    inp = OctetString.from_str(input("Then input the message: "))
+    message = input("Then input the message: ").encode("utf-8")
 
-# Sender
-print("=" * 15 + " Sender " + "=" * 15)
 
-print(inp.diagnostic())
+data = send(message)
+assert recieve(*data)
 
-pss_signature = pss_sign(inp, MAX_SIGN_LEN)
-print(pss_signature.diagnostic())
-
-numeric_repr = pss_signature.to_int()
-print(numeric_repr)
-
-num_size = math.ceil(math.log2(numeric_repr))
-public, private = rsa_generate_keypair_of_sizes(num_size // 2 + 1, num_size // 2)
-print(public)
-print(private)
-
-rsa_signature = rsa_encode(numeric_repr, private)
-print(rsa_signature)
-
-# Reciever
-print("=" * 15 + " Reciever " + "=" * 15)
-
-decoded = rsa_decode(rsa_signature, public)
-print(decoded)
-
-signature = OctetString.from_int(decoded)
-print(signature.diagnostic())
-
-is_valid = pss_verify(inp, MAX_SIGN_LEN, signature)
-print("Valid" if is_valid else "Invalid")
-try:
-    print(inp.to_str())
-except UnicodeDecodeError:
-    print(inp.to_bytes())
-
-# Reciever
+# Error tests
 print("=" * 15 + " Error tests " + "=" * 15)
+inp = OctetString.from_bytes(message)
+pss_signature = pss_sign(inp, MAX_SIGN_LEN)
 
-is_valid = pss_verify(OctetString([inp[0] + 1, *inp[1:]]), MAX_SIGN_LEN, signature)
+is_valid = pss_verify(OctetString([inp[0] + 1, *inp[1:]]), MAX_SIGN_LEN, pss_signature)
 print("Valid" if is_valid else "Invalid")
 
 is_valid = pss_verify(
-    inp, MAX_SIGN_LEN, OctetString([signature[0] + 1, *signature[1:]])
+    inp, MAX_SIGN_LEN, OctetString([pss_signature[0] + 1, *pss_signature[1:]])
 )
 print("Valid" if is_valid else "Invalid")
 
 is_valid = pss_verify(
-    inp, MAX_SIGN_LEN, OctetString([*signature[:-1], signature[-1] + 1])
+    inp, MAX_SIGN_LEN, OctetString([*pss_signature[:-1], pss_signature[-1] + 1])
 )
 print("Valid" if is_valid else "Invalid")
