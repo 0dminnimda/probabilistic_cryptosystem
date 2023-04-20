@@ -176,15 +176,6 @@ def pss_verify(message: OctetString, max_len: int, signature: OctetString) -> bo
 ### RSA ###
 
 
-def generate_prime_candidate(nbits: int) -> Iterable[int]:
-    """Generates a random candidate prime number in the form 6k ± 1 with nbits bits."""
-    while True:
-        candidate = 6 * random.getrandbits(nbits - 2) + random.choice((-1, 1))
-        candidate |= 1  # Make sure the number is odd
-        candidate |= 1 << (nbits - 1)  # Make sure the number has nbits bits
-        yield candidate
-
-
 def Miller_Rabin_test(n: int, s: int, d: int) -> bool:
     a = random.randint(2, n - 2)
     x = pow(a, d, n)
@@ -400,25 +391,39 @@ Input: integer n > 1.
 
 
 def is_prime(n: int) -> bool:
-    # still probabilistic, but really unlikely
-    return is_prime_Miller_Rabin(n, 40) and not is_perfect_power(n)
-    # and is_prime_AKS(n)
+    # still probabilistic, but is really unlikely
+    # if 64 iterations is cryptographically accepted for 512 bits
+    # as well as 128 iterations for 1024 bits
+    # then the min(10, bits // 8) is an ok general rule
+    return (
+        is_prime_Miller_Rabin(n, max(10, n.bit_length() // 8))
+        and not is_perfect_power(n)
+        # and is_prime_AKS(n)
+    )
 
 
-# for i in range(10**6):
+# for i in range(10**7):
 #     a = is_prime_trial_division(i)
 #     b = is_prime(i)
 #     if a != b:
 #         print(i, a, b)
-#     if i % 100 == 0:
+#     if i % 50000 == 0:
 #         print(i)
+
+
+def generate_prime_candidate(nbits: int) -> Iterable[int]:
+    """Generates a random candidate prime number in the form 6k ± 1 with nbits bits."""
+    while True:
+        candidate = 6 * random.getrandbits(nbits - 2) + random.choice((-1, 1))
+        candidate |= 1  # Make sure the number is odd
+        candidate |= 1 << (nbits - 1)  # Make sure the number has nbits bits
+        yield candidate
 
 
 def generate_prime(nbits: int) -> int:
     """Generates a random prime number in the form 6k ± 1 with nbits bits."""
-    for i, candidate in enumerate(generate_prime_candidate(nbits)):
+    for candidate in generate_prime_candidate(nbits):
         if is_prime(candidate):
-            print("gotcha", i, candidate)
             return candidate
     assert False, "Unreachable"
 
