@@ -203,8 +203,8 @@ def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
     """Tests if n is prime using the probabilistic Miller-Rabin primality test."""
 
     # Ensure input requirements
-    if n <= 2:
-        return n == 2
+    if n <= 3:
+        return n == 2 or n == 3
     if n % 2 == 0:
         return False
 
@@ -243,11 +243,17 @@ def is_perfect_power(n: int) -> bool:
     if n <= 2:
         return False
 
-    for base in range(2, n.bit_length() + 1):
-        exponent = round(math.log(n, base))
-        if base**exponent == n:
-            return True
-    return False
+    # bases = np.array(range(2, n.bit_length() + 1))
+    # return np.any(bases ** (math.log2(n) / np.log2(aa)).astype(int) == n)
+
+    return any(
+        base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
+    )
+    # for base in range(2, n.bit_length() + 1):
+    #     exponent = round(math.log(n, base))
+    #     if base**exponent == n:
+    #         return True
+    # return False
 
 
 def multiplicative_order(a: int, n: int) -> int:
@@ -306,9 +312,10 @@ def is_prime_AKS(n: int) -> bool:
     r = 2
     while any(pow(n, k, r) in {0, 1} for k in range(1, cap_k + 1)):
         r += 1
+    print(r)
 
-    for a in range(r, 1, -1):
-        if 1 < math.gcd(a, n) < n:
+    for a in range(2, min(r, n - 1) + 1):
+        if n % a == 0:
             return False
 
     if n <= r:
@@ -319,7 +326,7 @@ def is_prime_AKS(n: int) -> bool:
     #         # print("my")
     #         return False
 
-    # FIXME: implement to deterministic
+    # FIXME: fix to make deterministic
     # Check if n is composite using the polynomial function
     # for a in range(1, 2 * math.ceil(r**0.5) * math.ceil(math.log2(n)) + 1):
     # for a in range(1, int(r**0.5 * math.log2(n)) + 1):
@@ -331,6 +338,7 @@ def is_prime_AKS(n: int) -> bool:
     return True
 
 
+# problem with polynomial
 # print(is_prime_AKS(54731))
 
 
@@ -392,13 +400,25 @@ Input: integer n > 1.
 
 
 def is_prime(n: int) -> bool:
-    return is_prime_Miller_Rabin(n, 40) and is_prime_AKS(n)
+    # still probabilistic, but really unlikely
+    return is_prime_Miller_Rabin(n, 40) and not is_perfect_power(n)
+    # and is_prime_AKS(n)
+
+
+# for i in range(10**6):
+#     a = is_prime_trial_division(i)
+#     b = is_prime(i)
+#     if a != b:
+#         print(i, a, b)
+#     if i % 100 == 0:
+#         print(i)
 
 
 def generate_prime(nbits: int) -> int:
     """Generates a random prime number in the form 6k ± 1 with nbits bits."""
-    for candidate in generate_prime_candidate(nbits):
+    for i, candidate in enumerate(generate_prime_candidate(nbits)):
         if is_prime(candidate):
+            print("gotcha", i, candidate)
             return candidate
     assert False, "Unreachable"
 
@@ -493,7 +513,7 @@ numeric_repr = pss_signature.to_int()
 print(numeric_repr)
 
 num_size = math.ceil(math.log2(numeric_repr))
-public, private = rsa_generate_keypair_of_sizes(num_size, num_size)
+public, private = rsa_generate_keypair_of_sizes(num_size // 2 + 1, num_size // 2)
 print(public)
 print(private)
 
