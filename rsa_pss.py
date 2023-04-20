@@ -1,4 +1,5 @@
 from __future__ import annotations
+import ast
 
 import hashlib
 import itertools
@@ -532,29 +533,47 @@ def recieve(message: bytes, rsa_signature: int, public: Key) -> bool:
     return is_valid
 
 
-if int(input("Do you want to use random message? [0/1]: ")):
-    message = OctetString.random(69).to_bytes()
+def error_test(message: bytes) -> None:
+    print("=" * 15 + " Error tests " + "=" * 15)
+    inp = OctetString.from_bytes(message)
+    pss_signature = pss_sign(inp, MAX_SIGN_LEN)
+
+    is_valid = pss_verify(
+        OctetString([inp[0] + 1, *inp[1:]]), MAX_SIGN_LEN, pss_signature
+    )
+    print("Valid" if is_valid else "Invalid")
+
+    is_valid = pss_verify(
+        inp, MAX_SIGN_LEN, OctetString([pss_signature[0] + 1, *pss_signature[1:]])
+    )
+    print("Valid" if is_valid else "Invalid")
+
+    is_valid = pss_verify(
+        inp, MAX_SIGN_LEN, OctetString([*pss_signature[:-1], pss_signature[-1] + 1])
+    )
+    print("Valid" if is_valid else "Invalid")
+
+
+operation = input("Send message/Recieve message/Both? (s/r/b) [b]: ") or "b"
+
+if "b" in operation:
+    operation = "sr"
+
+data: tuple[bytes, int, Key]
+if "s" in operation:
+    if int(input("Do you want to use random message? (0/1) [1]: ") or "1"):
+        message = OctetString.random(69).to_bytes()
+    else:
+        message = input("Then input the message: ").encode("utf-8")
+
+    data = send(message)
+    print("Sending:", data)
 else:
-    message = input("Then input the message: ").encode("utf-8")
+    data = ast.literal_eval(input("Then input the sent data: "))
+    assert type(data) is tuple
+    assert len(data) == 3
 
+if "r" in operation:
+    assert recieve(*data)
 
-data = send(message)
-assert recieve(*data)
-
-# Error tests
-print("=" * 15 + " Error tests " + "=" * 15)
-inp = OctetString.from_bytes(message)
-pss_signature = pss_sign(inp, MAX_SIGN_LEN)
-
-is_valid = pss_verify(OctetString([inp[0] + 1, *inp[1:]]), MAX_SIGN_LEN, pss_signature)
-print("Valid" if is_valid else "Invalid")
-
-is_valid = pss_verify(
-    inp, MAX_SIGN_LEN, OctetString([pss_signature[0] + 1, *pss_signature[1:]])
-)
-print("Valid" if is_valid else "Invalid")
-
-is_valid = pss_verify(
-    inp, MAX_SIGN_LEN, OctetString([*pss_signature[:-1], pss_signature[-1] + 1])
-)
-print("Valid" if is_valid else "Invalid")
+error_test(data[0])
