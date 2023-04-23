@@ -177,12 +177,13 @@ def pss_verify(message: OctetString, max_len: int, signature: OctetString) -> bo
 ### Primality ###
 
 
-def Miller_Rabin_test(n: int, a: int, s: int, d: int) -> bool:
+def Miller_Rabin_test(n: int, s: int, d: int, a: int = 0) -> bool:
     """
     Tests if `n` is composite with respect to a base `a`,
-    and constatnts `d` and `s` using the Miller-Rabin test.
+    and constatnts `s` and `d` using the Miller-Rabin test.
     Returns True if n is probably prime, False otherwise.
     """
+    a = a or random.randint(2, n - 2)
     x = pow(a, d, n)
     if x == 1 or x == n - 1:
         return True
@@ -202,6 +203,15 @@ def Miller_Rabin_iterations(n: int) -> int:
     return max(10, n.bit_length() // 8)
 
 
+def Miller_Rabin_constants(n: int) -> tuple[int, int]:
+    """Compute s and d such that n - 1 = d * 2^s, where d is odd."""
+    s, d = 0, n - 1
+    while d % 2 == 0:
+        s += 1
+        d //= 2
+    return s, d
+
+
 def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
     """Tests if n is prime using the probabilistic Miller-Rabin primality test."""
 
@@ -211,17 +221,12 @@ def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
     if n % 2 == 0:
         return False
 
-    # Compute s and d such that n - 1 = d * 2^s, where d is odd
-    s, d = 0, n - 1
-    while d % 2 == 0:
-        s += 1
-        d //= 2
+    # Set all the variables
+    s, d = Miller_Rabin_constants(n)
+    k = k or Miller_Rabin_iterations(n)
 
     # Perform k iterations of the Miller-Rabin test
-    k = k or Miller_Rabin_iterations(n)
-    return all(
-        Miller_Rabin_test(n, random.randint(2, n - 2), s, d) for _ in range(k)
-    )
+    return all(Miller_Rabin_test(n, s, d) for _ in range(k))
 
 
 def integer_root_guess(
@@ -281,6 +286,79 @@ def is_prime_trial_division(n: int) -> bool:
     return True
 
 
+def jacobi_symbol(a: int, b: int) -> int:
+    """Computes the Jacobi symbol (a/b) using the algorithm of Euler."""
+    if b == 1:
+        return 1
+    elif a == 0:
+        return 0
+    elif b % 2 == 0:
+        return jacobi_symbol(a, b // 2) * pow(-1, (b**2 - 1) // 8)
+    elif a % 2 == 0:
+        return jacobi_symbol(a // 2, b) * pow(
+            -1, ((a**2 - 1) // 8) * ((b**2 - 1) // 8)
+        )
+    elif a < b:
+        return jacobi_symbol(b, a) * pow(-1, (a - 1) * (b - 1) // 4)
+    else:
+        return jacobi_symbol(b, a % b) * pow(-1, ((a - 1) // 2) * ((b - 1) // 2))
+
+
+def lucas_v(p: int, q: int, n: int) -> int:
+    """Computes the nth Lucas V sequence number modulo n."""
+    if n == 0:
+        return 2 % q
+    elif n == 1:
+        return p % q
+    else:
+        v_n_minus_1 = lucas_v(p, q, n - 1)
+        v_n_minus_2 = lucas_v(p, q, n - 2)
+        return (p * v_n_minus_1 - q * v_n_minus_2) % q
+
+
+def is_square(n: int) -> bool:
+    """Tests if n is a perfect square."""
+    return integer_root(n) ** 2 == n
+
+
+def is_probable_prime_lucas_test(n: int) -> bool:
+    """Tests if n is prime using the determenistic Lucas probable primality test."""
+
+    # Find the first element in the Fibonacci sequence greater than n
+    f0, f1 = 0, 1
+    while f1 <= n:
+        f0, f1 = f1, f0 + f1
+
+    # Compute the parameters for the Lucas sequence
+    p, q = 1 - f0, 1 + f0
+
+    # Compute the Lucas sequence modulo n until an element with Jacobi symbol 1 is found
+    for i in range(1, n + 1):
+        v_i = lucas_v(p, q, i) % n
+        if v_i == 0 or is_square(jacobi_symbol(v_i, n)):
+            return True
+
+    return False
+
+
+def is_prime_baillie_psw(n: int) -> bool:
+    """Tests if n is prime using the probabilistic Baillie-PSW primality test."""
+
+    # Ensure input requirements
+    if n <= 3:
+        return n == 2 or n == 3
+    if n % 2 == 0:
+        return False
+
+    k = 2
+    s, d = Miller_Rabin_constants(n)
+    return (
+        Miller_Rabin_test(n, s, d, 2)
+        and is_probable_prime_lucas_test(n)
+        and all(Miller_Rabin_test(n, s, d) for _ in range(k))
+    )
+
+
 def is_perfect_power(n: int) -> bool:
     """
     Returns True if n is a perfect power (i.e. n=m^k for some integers m>1 and k>1).
@@ -295,17 +373,33 @@ def is_perfect_power(n: int) -> bool:
 
 
 def is_prime(n: int) -> bool:
-    # still probabilistic, but is really unlikely
-    return is_prime_Miller_Rabin(n) and not is_perfect_power(n)
+    # probabilistic test, but it is an open question if false positives are possible
+    # also SEE: https://crypto.stackexchange.com/q/103085/108971
+    return is_prime_baillie_psw(n)  # and not is_perfect_power(n)
 
 
+# import time
+
+
+# prev = time.time()
 # for i in range(10**7):
-#     a = is_prime_trial_division(i)
-#     b = is_prime(i)
-#     if a != b:
-#         print(i, a, b)
+#     # a = is_prime_trial_division(i)
+#     # a = is_prime_Miller_Rabin(i) and not is_perfect_power(i)
+#     # b = is_prime(i)
+#     # if a != b:
+#     #     print(i, a, b)
+#     # is_perfect_power(i)
+#     # is_prime_Miller_Rabin(i, max(10, i.bit_length() // 8))
+#     # is_prime_Miller_Rabin(i, 25)
+#     # is_prime_Miller_Rabin(i)
+#     # is_prime(i)
 #     if i % 50000 == 0:
-#         print(i)
+#         now = time.time()
+#         print(i, now - prev)
+#         prev = now
+
+
+# exit()
 
 
 def generate_prime_candidate(nbits: int) -> Iterable[int]:
