@@ -210,6 +210,20 @@ def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
     return all(Miller_Rabin_test(n, s, d) for _ in range(ntests))
 
 
+def integer_sqrt_guess(
+    n: int, upper_bound: bool = False, lower_bound: bool = False
+) -> int:
+    """
+    Creates a good guess for integer_sqrt(n).
+    """
+    shift = n.bit_length() // 2
+    if upper_bound:
+        shift += 1
+    elif lower_bound:
+        shift -= 1
+    return 1 << shift
+
+
 def integer_sqrt(n: int) -> int:
     """
     Computes the integer square root (i.e., the largest integer x such that x^2 <= n)
@@ -220,8 +234,10 @@ def integer_sqrt(n: int) -> int:
     if n <= 1:
         return n
 
-    # upper bound, but 1 << (n.bit_length() // 2) is closer to resule
-    x = 1 << (n.bit_length() // 2 + 1)
+    # it needs to be an upper bound,
+    # because I don't know what is the termination condition
+    # for guesses wich can be on both sides of the solution
+    x = integer_sqrt_guess(n, upper_bound=True)
     while 1:
         y = (x + n // x) // 2
         if y >= x:
