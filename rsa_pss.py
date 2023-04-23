@@ -235,8 +235,12 @@ def is_perfect_power(n: int) -> bool:
     if n <= 2:
         return False
 
-    # bases = np.array(range(2, n.bit_length() + 1))
-    # return np.any(bases ** (math.log2(n) / np.log2(aa)).astype(int) == n)
+    # bases = np.arange(2, n.bit_length() + 1)
+    # exponents = (math.log(n) / np.log(bases)).astype(np.int16)
+    # print(exponents)
+    # return bool(np.any(bases ** exponents == n))
+
+    # return any(bases[i] ** exponents[i] == n for i in range(len(bases)))
 
     return any(
         base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
