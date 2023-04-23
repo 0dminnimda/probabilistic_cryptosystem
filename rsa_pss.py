@@ -273,16 +273,50 @@ def is_perfect_power(n: int) -> bool:
     if n <= 2:
         return False
 
-    # bases = np.arange(2, n.bit_length() + 1)
-    # exponents = (math.log(n) / np.log(bases)).astype(np.int16)
-    # print(exponents)
-    # return bool(np.any(bases ** exponents == n))
-
-    # return any(bases[i] ** exponents[i] == n for i in range(len(bases)))
-
     return any(
         base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
     )
+
+
+def is_perfect_power_helper(n: int, p: int) -> bool:
+    left, right = 1, integer_root_guess(n, p)
+    while left <= right:
+        mid = (left + right) // 2
+        mid_pow = mid**p
+        if mid_pow < n:
+            left = mid + 1
+        elif mid_pow > n:
+            right = mid - 1
+        else:
+            return True
+    return False
+
+
+def is_perfect_power2(n: int) -> bool:
+    if n <= 2:
+        return False
+
+    return any(
+        is_perfect_power_helper(n, base) for base in range(2, n.bit_length() + 1)
+    )
+
+
+def is_perfect_power_binary_search(n):
+    if n <= 2:
+        return False
+
+    low = 2
+    high = n.bit_length()
+    while low <= high:
+        mid = (low + high) // 2
+        exped = integer_root(n, mid) ** mid
+        if exped < n:
+            low = mid + 1
+        elif exped > n:
+            high = mid - 1
+        else:
+            return True
+    return False
 
 
 def is_prime(n: int) -> bool:
