@@ -1,7 +1,8 @@
 import ast
 
 from src import rsa, pss
-from src.pss import OctetString, MAX_SIGN_LEN
+from src.octet_string import OctetString
+from src.pss import MAX_SIGN_LEN
 
 
 def send(message: bytes) -> tuple[bytes, int, rsa.Key]:
