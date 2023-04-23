@@ -1,35 +1,11 @@
 import random
 import math
 
+from .algorithms import modinv
 from .primes import random_prime
 
 
-def xgcd(a: int, b: int) -> tuple[int, int, int]:
-    """Extended Euclidean algorithm."""
-    x, y, u, v = 0, 1, 1, 0
-    while a != 0:
-        q, r = divmod(b, a)
-        b, a = a, r
-        x, y, u, v = u, v, x - u * q, y - v * q
-    return b, x, y
-
-
-def egcd(a: int, b: int) -> tuple[int, int, int]:
-    """Extended Euclidean algorithm."""
-    if a == 0:
-        return (b, 0, 1)
-    else:
-        g, y, x = egcd(b % a, a)
-        return (g, x - (b // a) * y, y)
-
-
-def modinv(a: int, m: int) -> int:
-    """Calculates the modular multiplicative inverse of a modulo m."""
-    g, x, y = egcd(a, m)
-    if g != 1:
-        raise ValueError("Modular inverse does not exist")
-    else:
-        return x % m
+Key = tuple[int, int]
 
 
 def rsa_choose_public_exponent(phi: int) -> int:
@@ -39,9 +15,6 @@ def rsa_choose_public_exponent(phi: int) -> int:
         if math.gcd(e, phi) == 1:
             return e
     assert False, "Unreachable"
-
-
-Key = tuple[int, int]
 
 
 def rsa_generate_keypair(p: int, q: int) -> tuple[Key, Key]:
