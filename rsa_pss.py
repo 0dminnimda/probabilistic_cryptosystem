@@ -177,8 +177,12 @@ def pss_verify(message: OctetString, max_len: int, signature: OctetString) -> bo
 ### Primality ###
 
 
-def Miller_Rabin_test(n: int, s: int, d: int) -> bool:
-    a = random.randint(2, n - 2)
+def Miller_Rabin_test(n: int, a: int, s: int, d: int) -> bool:
+    """
+    Tests if `n` is composite with respect to a base `a`,
+    and constatnts `d` and `s` using the Miller-Rabin test.
+    Returns True if n is probably prime, False otherwise.
+    """
     x = pow(a, d, n)
     if x == 1 or x == n - 1:
         return True
@@ -186,12 +190,19 @@ def Miller_Rabin_test(n: int, s: int, d: int) -> bool:
         x = pow(x, 2, n)
         if x == n - 1:
             return True
-        if x == 1:
+        if x <= 1:
             return False
     return False
 
 
-def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
+def Miller_Rabin_iterations(n: int) -> int:
+    # if 64 iterations is cryptographically accepted for 512 bits
+    # as well as 128 iterations for 1024 bits
+    # then the min(10, bits // 8) is an ok general rule
+    return max(10, n.bit_length() // 8)
+
+
+def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
     """Tests if n is prime using the probabilistic Miller-Rabin primality test."""
 
     # Ensure input requirements
@@ -206,8 +217,11 @@ def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
         s += 1
         d //= 2
 
-    # Perform ntests iterations of the Miller-Rabin test
-    return all(Miller_Rabin_test(n, s, d) for _ in range(ntests))
+    # Perform k iterations of the Miller-Rabin test
+    k = k or Miller_Rabin_iterations(n)
+    return all(
+        Miller_Rabin_test(n, random.randint(2, n - 2), s, d) for _ in range(k)
+    )
 
 
 def integer_root_guess(
@@ -280,13 +294,7 @@ def is_perfect_power(n: int) -> bool:
 
 def is_prime(n: int) -> bool:
     # still probabilistic, but is really unlikely
-    # if 64 iterations is cryptographically accepted for 512 bits
-    # as well as 128 iterations for 1024 bits
-    # then the min(10, bits // 8) is an ok general rule
-    return (
-        is_prime_Miller_Rabin(n, max(10, n.bit_length() // 8))
-        and not is_perfect_power(n)
-    )
+    return is_prime_Miller_Rabin(n) and not is_perfect_power(n)
 
 
 # for i in range(10**7):
