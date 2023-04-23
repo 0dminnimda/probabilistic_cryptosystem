@@ -63,9 +63,8 @@ class OctetString(UserList[Octet]):
     def random(cls, length: int) -> OctetString:
         return cls(random_octet() for _ in range(length))
 
-
-def apply_mask(value: OctetString, mask: OctetString) -> OctetString:
-    return OctetString(it ^ m for it, m in zip(value, mask))
+    def __xor__(self, mask: OctetString) -> OctetString:
+        return OctetString(it ^ m for it, m in zip(self, mask))
 
 
 def MGF(value: OctetString, out_len: int) -> OctetString:
@@ -106,7 +105,7 @@ def sign(message: OctetString, max_len: int) -> OctetString:
 
     expanded_w = MGF(w, max_len - W_LEN)
     seed_mask, remain_mask = separate(expanded_w, SEED_LEN)
-    masked_seed = apply_mask(seed, seed_mask)
+    masked_seed = seed ^ seed_mask
     return w + masked_seed + remain_mask
 
 
@@ -120,7 +119,7 @@ def verify(message: OctetString, max_len: int, signature: OctetString) -> bool:
 
     expanded_w = MGF(w, max_len - W_LEN)
     seed_mask, remain_mask_current = separate(expanded_w, SEED_LEN)
-    seed = apply_mask(masked_seed, seed_mask)
+    seed = masked_seed ^ seed_mask
 
     w_current = MGF(seed + message, W_LEN)
     if w != w_current:
