@@ -18,8 +18,7 @@ def send(message: bytes) -> tuple[bytes, int, rsa.Key]:
     numeric_repr = pss_signature.to_int()
     print(numeric_repr)
 
-    prime_size = numeric_repr.bit_length() // 2 + 1
-    public, private = rsa.generate_keypair_of_sizes(prime_size, prime_size)
+    public, private = rsa.generate_keypair(numeric_repr.bit_length())
     print(public)
     print(private)
 

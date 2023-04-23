@@ -17,7 +17,7 @@ def choose_public_exponent(phi: int) -> int:
     assert False, "Unreachable"
 
 
-def generate_keypair(p: int, q: int) -> tuple[Key, Key]:
+def keypair_from_primes(p: int, q: int) -> tuple[Key, Key]:
     """Generates an RSA keypair with the given prime numbers p and q."""
     n = p * q
     phi = (p - 1) * (q - 1)
@@ -26,8 +26,10 @@ def generate_keypair(p: int, q: int) -> tuple[Key, Key]:
     return ((e, n), (d, n))
 
 
-def generate_keypair_of_sizes(s1: int, s2: int) -> tuple[Key, Key]:
-    return generate_keypair(random_prime(s1), random_prime(s2))
+def generate_keypair(nbits: int) -> tuple[Key, Key]:
+    """Generates an RSA keypair that will be able to encode `nbits` long numbers."""
+    size = nbits // 2 + 1
+    return keypair_from_primes(random_prime(size), random_prime(size))
 
 
 def encode(number: int, private_key: Key) -> int:
