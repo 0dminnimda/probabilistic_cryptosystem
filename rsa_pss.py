@@ -210,6 +210,75 @@ def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
     return all(Miller_Rabin_test(n, s, d) for _ in range(ntests))
 
 
+def integer_sqrt_newton(n: int) -> int:
+    """
+    Computes the integer square root (i.e., the largest integer x such that x^2 <= n)
+    using the Newton's method.
+    """
+    if n < 0:
+        raise ValueError("math domain error")
+    if n <= 1:
+        return n
+
+    # upper bound, but 1 << (n.bit_length() // 2) is closer to resule
+    x = 1 << (n.bit_length() // 2 + 1)
+    while 1:
+        y = (x + n // x) // 2
+        if y >= x:
+            break
+        x = y
+    return x
+
+
+def integer_sqrt_binary_search(n: int) -> int:
+    """
+    Computes the integer square root (i.e., the largest integer x such that x^2 <= n)
+    using the binary search.
+    """
+    if n < 0:
+        raise ValueError("math domain error")
+    if n < 2:
+        return n
+    low = 2
+    high = 1 << (n.bit_length() // 2 + 1)
+    while low <= high:
+        mid = (low + high) // 2
+        mid_pow = mid*mid
+        if mid_pow > n:
+            high = mid - 1
+        elif mid_pow < n:
+            low = mid + 1
+        else:
+            return mid
+    return low - 1
+
+
+# import time
+# prev = time.time()
+# for i in range(10**7):
+#     a = integer_sqrt_newton(i)
+#     # b = integer_sqrt_binary_search(i)
+#     # if a != b:
+#     #     print(i, a, b)
+#     if i % (2*50000) == 0:
+#         now = time.time()
+#         print(i, now - prev)
+#         prev = now
+
+# for i in range(2**10000, 2**10001):
+#     # a = integer_sqrt_newton(i)
+#     b = integer_sqrt_binary_search(i)
+#     # if a != b:
+#     #     print(i, a, b)
+#     if i % 50 == 0:
+#         now = time.time()
+#         print(now - prev)
+#         prev = now
+
+
+# exit()
+
+
 def is_prime_trial_division(n: int) -> bool:
     """Tests if n is prime using the deterministic Trial Division primality test."""
 
@@ -220,7 +289,7 @@ def is_prime_trial_division(n: int) -> bool:
         return False
 
     # Check odd divisors up to the square root of n
-    for i in range(3, int(n**0.5) + 1, 2):
+    for i in range(3, integer_sqrt_newton(n) + 1, 2):
         if n % i == 0:
             return False
 
