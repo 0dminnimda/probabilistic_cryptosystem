@@ -232,9 +232,7 @@ def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
 def integer_root_guess(
     n: int, p: int = 2, upper_bound: bool = False, lower_bound: bool = False
 ) -> int:
-    """
-    Creates a good guess for integer_root(n, p).
-    """
+    """Creates a good guess for integer_root(n, p)."""
     shift = math.log(n, p) / p
     if upper_bound:
         return p ** math.ceil(shift)
@@ -261,7 +259,7 @@ def integer_root(n: int, p: int = 2, k: int = -1) -> int:
     # for guesses wich can be on both sides of the solution
     x = integer_root_guess(n, upper_bound=True)
     while k != 0:
-        y = (p1*x + n // x**p1) // p
+        y = (p1 * x + n // x**p1) // p
         if y >= x:
             break
         x = y
@@ -376,30 +374,6 @@ def is_prime(n: int) -> bool:
     # probabilistic test, but it is an open question if false positives are possible
     # also SEE: https://crypto.stackexchange.com/q/103085/108971
     return is_prime_baillie_psw(n)  # and not is_perfect_power(n)
-
-
-# import time
-
-
-# prev = time.time()
-# for i in range(10**7):
-#     # a = is_prime_trial_division(i)
-#     # a = is_prime_Miller_Rabin(i) and not is_perfect_power(i)
-#     # b = is_prime(i)
-#     # if a != b:
-#     #     print(i, a, b)
-#     # is_perfect_power(i)
-#     # is_prime_Miller_Rabin(i, max(10, i.bit_length() // 8))
-#     # is_prime_Miller_Rabin(i, 25)
-#     # is_prime_Miller_Rabin(i)
-#     # is_prime(i)
-#     if i % 50000 == 0:
-#         now = time.time()
-#         print(i, now - prev)
-#         prev = now
-
-
-# exit()
 
 
 def generate_prime_candidate(nbits: int) -> Iterable[int]:
