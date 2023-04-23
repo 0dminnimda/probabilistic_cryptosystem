@@ -385,7 +385,7 @@ def generate_prime_candidate(nbits: int) -> Iterable[int]:
         yield candidate
 
 
-def generate_prime(nbits: int) -> int:
+def random_prime(nbits: int) -> int:
     """Generates a random prime number in the form 6k ± 1 with nbits bits."""
     for candidate in generate_prime_candidate(nbits):
         if is_prime(candidate):
@@ -430,6 +430,7 @@ def rsa_choose_public_exponent(phi: int) -> int:
         e = random.randrange(3, phi, 2)  # Choose a random odd number between 3 and phi
         if math.gcd(e, phi) == 1:
             return e
+    assert False, "Unreachable"
 
 
 Key = tuple[int, int]
@@ -445,7 +446,7 @@ def rsa_generate_keypair(p: int, q: int) -> tuple[Key, Key]:
 
 
 def rsa_generate_keypair_of_sizes(s1: int, s2: int) -> tuple[Key, Key]:
-    return rsa_generate_keypair(generate_prime(s1), generate_prime(s2))
+    return rsa_generate_keypair(random_prime(s1), random_prime(s2))
 
 
 def rsa_encode(number: int, private_key: Key) -> int:
