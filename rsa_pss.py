@@ -174,7 +174,7 @@ def pss_verify(message: OctetString, max_len: int, signature: OctetString) -> bo
     return True
 
 
-### RSA ###
+### Primality ###
 
 
 def Miller_Rabin_test(n: int, s: int, d: int) -> bool:
@@ -278,6 +278,9 @@ def generate_prime(nbits: int) -> int:
         if is_prime(candidate):
             return candidate
     assert False, "Unreachable"
+
+
+### RSA ###
 
 
 def xgcd(a: int, b: int) -> tuple[int, int, int]:
