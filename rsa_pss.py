@@ -300,7 +300,7 @@ def is_prime(n: int) -> bool:
 
 def generate_prime_candidate(nbits: int) -> Iterable[int]:
     """Generates a random candidate prime number in the form 6k ± 1 with nbits bits."""
-    while True:
+    while 1:
         candidate = 6 * random.getrandbits(nbits - 2) + random.choice((-1, 1))
         candidate |= 1  # Make sure the number is odd
         candidate |= 1 << (nbits - 1)  # Make sure the number has nbits bits
@@ -348,7 +348,7 @@ def modinv(a: int, m: int) -> int:
 
 def rsa_choose_public_exponent(phi: int) -> int:
     """Chooses a random prime number as the public exponent."""
-    while True:
+    while 1:
         e = random.randrange(3, phi, 2)  # Choose a random odd number between 3 and phi
         if math.gcd(e, phi) == 1:
             return e
