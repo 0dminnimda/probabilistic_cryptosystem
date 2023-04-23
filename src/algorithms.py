@@ -79,3 +79,16 @@ def jacobi_symbol(a: int, b: int) -> int:
         return jacobi_symbol(b, a) * pow(-1, (a - 1) * (b - 1) // 4)
     else:
         return jacobi_symbol(b, a % b) * pow(-1, ((a - 1) // 2) * ((b - 1) // 2))
+
+
+def is_perfect_power(n: int) -> bool:
+    """
+    Returns True if n is a perfect power (i.e. n=m^k for some integers m>1 and k>1).
+    False otherwise.
+    """
+    if n <= 2:
+        return False
+
+    return any(
+        base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
+    )

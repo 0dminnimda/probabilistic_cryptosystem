@@ -2,7 +2,7 @@ import math
 import random
 from typing import Iterable
 
-from .algorithms import is_square, jacobi_symbol, integer_root
+from .algorithms import jacobi_symbol, integer_root, is_square, is_perfect_power
 
 
 def miller_rabin_test(n: int, s: int, d: int, a: int = 0) -> bool:
@@ -121,19 +121,6 @@ def is_prime_baillie_psw(n: int) -> bool:
         miller_rabin_test(n, s, d, 2)
         and is_probable_prime_lucas_test(n)
         and all(miller_rabin_test(n, s, d) for _ in range(k))
-    )
-
-
-def is_perfect_power(n: int) -> bool:
-    """
-    Returns True if n is a perfect power (i.e. n=m^k for some integers m>1 and k>1).
-    False otherwise.
-    """
-    if n <= 2:
-        return False
-
-    return any(
-        base ** int(math.log(n, base)) == n for base in range(2, n.bit_length() + 1)
     )
 
 
