@@ -210,23 +210,24 @@ def is_prime_Miller_Rabin(n: int, ntests: int = 10) -> bool:
     return all(Miller_Rabin_test(n, s, d) for _ in range(ntests))
 
 
-def integer_sqrt_guess(
-    n: int, upper_bound: bool = False, lower_bound: bool = False
+def integer_root_guess(
+    n: int, p: int = 2, upper_bound: bool = False, lower_bound: bool = False
 ) -> int:
     """
-    Creates a good guess for integer_sqrt(n).
+    Creates a good guess for integer_root(n, p).
     """
-    shift = n.bit_length() // 2
+    shift = math.log(n, p) / p
     if upper_bound:
-        shift += 1
-    elif lower_bound:
-        shift -= 1
-    return 1 << shift
+        return p ** math.ceil(shift)
+    if lower_bound:
+        return p ** math.floor(shift)
+    # minimize the average error
+    return (p ** math.ceil(shift) + p ** math.floor(shift)) // 2
 
 
-def integer_sqrt(n: int) -> int:
+def integer_root(n: int, p: int = 2) -> int:
     """
-    Computes the integer square root (i.e., the largest integer x such that x^2 <= n)
+    Computes the integer square root (i.e., the largest integer x such that x^p <= n)
     using the Newton's method.
     """
     if n < 0:
@@ -234,12 +235,13 @@ def integer_sqrt(n: int) -> int:
     if n <= 1:
         return n
 
+    p1 = p - 1
     # it needs to be an upper bound,
     # because I don't know what is the termination condition
     # for guesses wich can be on both sides of the solution
-    x = integer_sqrt_guess(n, upper_bound=True)
+    x = integer_root_guess(n, upper_bound=True)
     while 1:
-        y = (x + n // x) // 2
+        y = (p1*x + n // x**p1) // p
         if y >= x:
             break
         x = y
@@ -256,7 +258,7 @@ def is_prime_trial_division(n: int) -> bool:
         return False
 
     # Check odd divisors up to the square root of n
-    for i in range(3, integer_sqrt(n) + 1, 2):
+    for i in range(3, integer_root(n) + 1, 2):
         if n % i == 0:
             return False
 
