@@ -5,7 +5,7 @@ from typing import Iterable
 from .algorithms import is_square, jacobi_symbol, integer_root
 
 
-def Miller_Rabin_test(n: int, s: int, d: int, a: int = 0) -> bool:
+def miller_rabin_test(n: int, s: int, d: int, a: int = 0) -> bool:
     """
     Tests if `n` is composite with respect to a base `a`,
     and constatnts `s` and `d` using the Miller-Rabin test.
@@ -24,14 +24,14 @@ def Miller_Rabin_test(n: int, s: int, d: int, a: int = 0) -> bool:
     return False
 
 
-def Miller_Rabin_iterations(n: int) -> int:
+def miller_rabin_iterations(n: int) -> int:
     # if 64 iterations is cryptographically accepted for 512 bits
     # as well as 128 iterations for 1024 bits
     # then the min(10, bits // 8) is an ok general rule
     return max(10, n.bit_length() // 8)
 
 
-def Miller_Rabin_constants(n: int) -> tuple[int, int]:
+def miller_rabin_constants(n: int) -> tuple[int, int]:
     """Compute s and d such that n - 1 = d * 2^s, where d is odd."""
     s, d = 0, n - 1
     while d % 2 == 0:
@@ -40,7 +40,7 @@ def Miller_Rabin_constants(n: int) -> tuple[int, int]:
     return s, d
 
 
-def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
+def is_prime_miller_rabin(n: int, k: int = 0) -> bool:
     """Tests if n is prime using the probabilistic Miller-Rabin primality test."""
 
     # Ensure input requirements
@@ -50,11 +50,11 @@ def is_prime_Miller_Rabin(n: int, k: int = 0) -> bool:
         return False
 
     # Set all the variables
-    s, d = Miller_Rabin_constants(n)
-    k = k or Miller_Rabin_iterations(n)
+    s, d = miller_rabin_constants(n)
+    k = k or miller_rabin_iterations(n)
 
     # Perform k iterations of the Miller-Rabin test
-    return all(Miller_Rabin_test(n, s, d) for _ in range(k))
+    return all(miller_rabin_test(n, s, d) for _ in range(k))
 
 
 def is_prime_trial_division(n: int) -> bool:
@@ -116,11 +116,11 @@ def is_prime_baillie_psw(n: int) -> bool:
         return False
 
     k = 2
-    s, d = Miller_Rabin_constants(n)
+    s, d = miller_rabin_constants(n)
     return (
-        Miller_Rabin_test(n, s, d, 2)
+        miller_rabin_test(n, s, d, 2)
         and is_probable_prime_lucas_test(n)
-        and all(Miller_Rabin_test(n, s, d) for _ in range(k))
+        and all(miller_rabin_test(n, s, d) for _ in range(k))
     )
 
 

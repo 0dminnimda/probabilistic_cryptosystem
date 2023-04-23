@@ -64,6 +64,10 @@ class OctetString(UserList[Octet]):
         return cls(random_octet() for _ in range(length))
 
 
+def apply_mask(value: OctetString, mask: OctetString) -> OctetString:
+    return OctetString(it ^ m for it, m in zip(value, mask))
+
+
 def MGF(value: OctetString, out_len: int) -> OctetString:
     """Mask Generation Function implementation using the SHA-256 hash"""
 
@@ -86,16 +90,12 @@ def MGF(value: OctetString, out_len: int) -> OctetString:
     return result
 
 
-def apply_mask(value: OctetString, mask: OctetString) -> OctetString:
-    return OctetString(it ^ m for it, m in zip(value, mask))
-
-
 W_LEN = 20
 SEED_LEN = 20
 MAX_SIGN_LEN = 50
 
 
-def pss_sign(message: OctetString, max_len: int) -> OctetString:
+def sign(message: OctetString, max_len: int) -> OctetString:
     if max_len < W_LEN + SEED_LEN:
         raise ValueError("Yall ar stupid, make max_len bigger!")
     if len(message) >= 2**61 - SEED_LEN - 1:
@@ -110,7 +110,7 @@ def pss_sign(message: OctetString, max_len: int) -> OctetString:
     return w + masked_seed + remain_mask
 
 
-def pss_verify(message: OctetString, max_len: int, signature: OctetString) -> bool:
+def verify(message: OctetString, max_len: int, signature: OctetString) -> bool:
     if max_len < W_LEN + SEED_LEN:
         raise ValueError("Yall ar stupid, make max_len bigger!")
     if len(message) >= 2**61 - SEED_LEN - 1:

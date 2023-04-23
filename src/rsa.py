@@ -8,7 +8,7 @@ from .primes import random_prime
 Key = tuple[int, int]
 
 
-def rsa_choose_public_exponent(phi: int) -> int:
+def choose_public_exponent(phi: int) -> int:
     """Chooses a random prime number as the public exponent."""
     while 1:
         e = random.randrange(3, phi, 2)  # Choose a random odd number between 3 and phi
@@ -17,22 +17,22 @@ def rsa_choose_public_exponent(phi: int) -> int:
     assert False, "Unreachable"
 
 
-def rsa_generate_keypair(p: int, q: int) -> tuple[Key, Key]:
+def generate_keypair(p: int, q: int) -> tuple[Key, Key]:
     """Generates an RSA keypair with the given prime numbers p and q."""
     n = p * q
     phi = (p - 1) * (q - 1)
-    e = rsa_choose_public_exponent(phi)
+    e = choose_public_exponent(phi)
     d = modinv(e, phi)
     return ((e, n), (d, n))
 
 
-def rsa_generate_keypair_of_sizes(s1: int, s2: int) -> tuple[Key, Key]:
-    return rsa_generate_keypair(random_prime(s1), random_prime(s2))
+def generate_keypair_of_sizes(s1: int, s2: int) -> tuple[Key, Key]:
+    return generate_keypair(random_prime(s1), random_prime(s2))
 
 
-def rsa_encode(number: int, private_key: Key) -> int:
+def encode(number: int, private_key: Key) -> int:
     return pow(number, *private_key)
 
 
-def rsa_decode(number: int, public_key: Key) -> int:
+def decode(number: int, public_key: Key) -> int:
     return pow(number, *public_key)
