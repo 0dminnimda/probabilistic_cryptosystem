@@ -239,10 +239,11 @@ def integer_root_guess(
     return (p ** math.ceil(shift) + p ** math.floor(shift)) // 2
 
 
-def integer_root(n: int, p: int = 2) -> int:
+def integer_root(n: int, p: int = 2, k: int = -1) -> int:
     """
     Computes the integer square root (i.e., the largest integer x such that x^p <= n)
     using the Newton's method.
+    `k` - the number of iterations to do. If `k` is negative, iterations are not limited
     """
     if n < 0:
         raise ValueError("math domain error")
@@ -254,11 +255,12 @@ def integer_root(n: int, p: int = 2) -> int:
     # because I don't know what is the termination condition
     # for guesses wich can be on both sides of the solution
     x = integer_root_guess(n, upper_bound=True)
-    while 1:
+    while k != 0:
         y = (p1*x + n // x**p1) // p
         if y >= x:
             break
         x = y
+        k -= 1
     return x
 
 
