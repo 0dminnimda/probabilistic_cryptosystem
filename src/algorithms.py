@@ -1,23 +1,14 @@
 import math
 
 
-def xgcd(a: int, b: int) -> tuple[int, int, int]:
-    """Extended Euclidean algorithm."""
-    x, y, u, v = 0, 1, 1, 0
-    while a != 0:
-        q, r = divmod(b, a)
-        b, a = a, r
-        x, y, u, v = u, v, x - u * q, y - v * q
-    return b, x, y
-
-
 def egcd(a: int, b: int) -> tuple[int, int, int]:
     """Extended Euclidean algorithm."""
-    if a == 0:
-        return (b, 0, 1)
-    else:
-        g, y, x = egcd(b % a, a)
-        return (g, x - (b // a) * y, y)
+    y0, y1, x0, x1 = 0, 1, 1, 0
+    while b != 0:
+        q, b, a = *divmod(a, b), b
+        x0, x1 = x1, x0 - q * x1
+        y0, y1 = y1, y0 - q * y1
+    return a, x0, y0
 
 
 def modinv(a: int, m: int) -> int:
