@@ -130,18 +130,22 @@ def is_prime(n: int) -> bool:
     return is_prime_baillie_psw(n)  # and not is_perfect_power(n)
 
 
-def generate_prime_candidate(nbits: int) -> Iterable[int]:
+def random_prime_candidate_6k_1(nbits: int) -> int:
     """Generates a random candidate prime number in the form 6k ± 1 with nbits bits."""
-    while 1:
-        candidate = 6 * random.getrandbits(nbits - 2) + random.choice((-1, 1))
-        candidate |= 1  # Make sure the number is odd
-        candidate |= 1 << (nbits - 1)  # Make sure the number has nbits bits
-        yield candidate
+    candidate = 6 * random.getrandbits(nbits - 2) + random.choice((-1, 1))
+    candidate |= 1  # Make sure the number is odd
+    candidate |= 1 << (nbits - 1)  # Make sure the number has nbits bits
+    return candidate
 
 
-def random_prime(nbits: int) -> int:
+def random_prime_6k_1(nbits: int) -> int:
     """Generates a random prime number in the form 6k ± 1 with nbits bits."""
-    for candidate in generate_prime_candidate(nbits):
+    while 1:
+        candidate = random_prime_candidate_6k_1(nbits)
         if is_prime(candidate):
             return candidate
     assert False, "Unreachable"
+
+
+def random_prime(nbits: int) -> int:
+    return random_prime_6k_1(nbits)
