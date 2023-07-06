@@ -6,7 +6,7 @@ This repository represents implementation and exploration of probabilistic crypt
 
 ### Send the message
 
-```console
+```bash
 probabilistic_cryptosystem>python rsa_pss.py
 Make output verbose? (0/1) [0]: 
 Send message/Recieve message/Both? (s/r/b) [b]: s
@@ -18,7 +18,7 @@ Sending: (b'Hello world!', 16942291586221555074681156252511877909670910085903206
 
 ### Recieve valid message
 
-```console
+```bash
 probabilistic_cryptosystem>python rsa_pss.py
 Make output verbose? (0/1) [0]: 
 Send message/Recieve message/Both? (s/r/b) [b]: r
@@ -32,7 +32,7 @@ Hello world!
 
 I only changed the last digit in the sent message from `9` to `8`
 
-```console
+```bash
 probabilistic_cryptosystem>python rsa_pss.py
 Make output verbose? (0/1) [0]: 
 Send message/Recieve message/Both? (s/r/b) [b]: r
@@ -51,7 +51,7 @@ AssertionError: Message is invalid
 
 Airspeed velocity of an unladen swallow is 32.4 kilometers per hour
 
-```console
+```bash
 probabilistic_cryptosystem>python rsa_pss.py
 Make output verbose? (0/1) [0]: 1
 Send message/Recieve message/Both? (s/r/b) [b]: b
